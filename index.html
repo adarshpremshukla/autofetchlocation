@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>User Geolocation App</h1>
+        <button class="geo-Btn">Show User Location</button>
+        <p class="showDetails">User location details will appear here.</p>
+        <div class="details-box fullAddress">User Address</div>
+        <div class="details-box formattedAddress">Full formatted address</div>
+    </div>
+
+    <script>
+        const showDetails = document.querySelector(".showDetails");
+        const fullAddress = document.querySelector(".fullAddress");
+        const formattedAddress = document.querySelector(".formattedAddress");
+
+        let apiEndPoint = "https://api.opencagedata.com/geocode/v1/json";
+        let apiKey = "6e7a527e91c74cf7aeab792a3573c087";
+
+        // Utility function to set cookies
+        const setCookie = (name, value, days) => {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = `${name}=${value};expires=${date.toUTCString()};path=/`;
+        };
+
+        // API to get user address
+        const getUserCurrentAddress = async (latitude, longitude) => {
+            let query = `${latitude},${longitude}`;
+            let apiUrl = `${apiEndPoint}?key=${apiKey}&q=${query}&pretty=1`;
+
+            try {
+                const res = await fetch(apiUrl);
+                const data = await res.json();
+                const { city, state, postcode, country } = data.results[0].components;
+
+                fullAddress.textContent = `Address: ${city}, ${postcode}, ${state}, ${country}`;
+                formattedAddress.textContent = `Full Address: ${data.results[0].formatted}`;
+
+                // Set data in cookies
+                setCookie('city', city, 7);         // Expires in 7 days
+                setCookie('state', state, 7);       // Expires in 7 days
+                setCookie('postcode', postcode, 7); // Expires in 7 days
+                setCookie('country', country, 7);   // Expires in 7 days
+            } catch (error) {
+                fullAddress.textContent = "Error fetching address data.";
+                formattedAddress.textContent = "Error fetching full address.";
+            }
+        };
+
+        document.querySelector(".geo-Btn").addEventListener('click', () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const { latitude, longitude } = position.coords;
+
+                    showDetails.textContent = `Latitude: ${latitude}, Longitude: ${longitude}`;
+                    getUserCurrentAddress(latitude, longitude);
+                }, (error) => {
+                    showDetails.textContent = error.message;
+                });
+            } else {
+                showDetails.textContent = "Geolocation is not supported by this browser.";
+            }
+        });
+    </script>
+</body>
+</html>
